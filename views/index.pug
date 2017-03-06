@@ -1,0 +1,15 @@
+doctype html
+html
+	head
+		title Blog App
+		body
+			h1 Welcome to our Blog 
+			button Login
+			h1 Register
+			form(action= "/register" , method="post")
+				input(type="name", name="username", placeholder="username")
+				input(type="string", name="email", placeholder="email")
+				input(type="string", name="password", placeholder="password")
+				input(type="submit", value="Add")
+			script(src="/jquery.js")
+			script(src="/custom.js")

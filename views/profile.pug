@@ -1,0 +1,10 @@
+doctype html
+html
+	head
+		title Blog App
+		body
+			h1 Welcome #{user.name}
+			p How do you feel today
+			form(action= "/status" , method="post")
+				input(type="name", name="post", placeholder="How do you feel today")
+				input(type="submit", value="Post")
