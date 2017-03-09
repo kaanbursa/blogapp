@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../module/database');
+const db = require('../module/database');
 
 
 router.get('/', (req, res) => {
 	
-	if(!req.session.visited){
+	if(!req.session.user){
 		res.render('index');
 	} else {
 		res.redirect('/profile')
@@ -13,47 +13,134 @@ router.get('/', (req, res) => {
 })
 
 router.post('/register', (req, res) =>{
-	const newUser = {
+	var newUser = {
 		name: req.body.username,
 		email: req.body.email,
 		password: req.body.password
 	}
 
-	User.addUser(newUser, (err, res) => {
-		if (err) throw err;
-		res.json({success: true, msg:'Registered user'})
+	db.User.create(newUser).then(theuser => {
+		req.session.user = theuser
+		res.redirect('/profile')
 	})
-
-	req.session.visited = true;
-	req.session.user = newUser;
-
-	res.redirect('/profile')
+	
 
 })
 
-router.get('/profile', (req, res) => {
-	var sessUser = req.session.user	;
-	
-	User.findUserByEmail(sessUser, (err, res) => {
-		if (err) throw err;
-		
+router.get('/login', (req, res) => {
+	res.render('login')
+})
+
+router.post('/login', (req, res) => {
+	db.User.findOne( {
+		where: {
+			name: req.body.username
+		},
+		include: [ {
+			model: db.Post,
+			include: [ db.Comment ]
+		} ]
+	}).then( user => {
+
+		if(user == null  || user.password != req.body.password){
+			res.send('Wrong password or invalid user')
+		} else {
+			req.session.user = theuser
+			res.redirect('profile');
+		}
+	}).catch( err => {
+		console.log(err);
 	})
 
-	res.render('profile', {user: sessUser});
+})
+
+
+router.get('/profile', (req, res) => {
+
+
+	if(req.session.user == null){
+		res.redirect('/')
+	} else {
+	db.User.findOne( {
+		where: {
+			email: req.session.user.email
+		},
+		include: [ {
+			model: db.Post,
+			include: [ db.Comment ]
+		} ]
+	}).then( user => {
+		res.render('profile', { user: user });
+	}).catch( err => {
+		console.log(err);
+	})
+}
+
+})
+
+
+router.get('/:id', (req, res) => {
+
+	if(req.params.id == null){
+		res.send('no user found')
+	} else {
+	db.User.findOne( {
+		where: {
+			id: req.params.id
+		},
+		include: [ {
+			model: db.Post,
+			include: [db.Comment]
+			} ]
+	}).then( user => {
+		res.render('users', { user: user })
+		
+	}).catch( err => {
+		console.log(err);
+	})
+}
+
 })
 
 router.post('/status', (req, res) => {
 	const newPost = {
-		owner: user.name,
-		content: req.body.post
+		content: req.body.post,
+		userId: req.session.user.id
 	}
+	
 
-	console.log(newPost);
-	User.addPost(newPost, (err, res) => {
-		if (err) throw err;
-		res.json({success: true, msg:' Post Uploaded'})
+	db.Post.create(newPost).then( () => {
+		res.redirect('/profile')
+	}).catch(err => {
+		console.log(err);
 	})
 	
+	
+
+})
+
+router.post('/search', (req, res) => {
+	var searchQuery = req.body.search.toLowerCase();
+
+	db.User.findAll({
+		where: {
+			name: {
+				$like: searchQuery
+			}
+		}
+	}).then(foundUsers=> {
+
+		res.render('search', {users: foundUsers, query: searchQuery});
+
+	}).catch( err => {
+		console.log(err);
+	})
+})
+
+
+router.post('/logout', (req, res) => {
+	req.session.destroy();
+	res.redirect('/')
 })
 
 

@@ -1,62 +1,34 @@
 const sequelize = require('sequelize');
-const db = new sequelize('blogapp', 'kaanbursa', '', {
+const dbseq = new sequelize('blogapp', 'kaanbursa', '', {
 	host: 'localhost',
 	dialect: 'postgres'
 	})
 
-const User = db.define('user', {
+let db = {}
+
+db.User = dbseq.define('user', {
 	name: sequelize.STRING,
 	email: sequelize.STRING,
 	password: sequelize.STRING
 })
 
-const Post = db.define('post', {
+db.Post = dbseq.define('post', {
 	title: sequelize.STRING,
 	content: sequelize.STRING,
 	
 })
 
-const Comment = db.define('comment', {
-	owner: sequelize.STRING,
+db.Comment = dbseq.define('comment', {
 	content: sequelize.STRING,
 })
 
-Comment.belongsTo( User, Post)
-Post.hasMany( Comment)
-Post.belongsTo( User )
-User.hasMany( Post )
+db.Comment.belongsTo( db.User, db.Post)
+db.Post.hasMany( db.Comment)
+db.Post.belongsTo( db.User )
+db.User.hasMany( db.Post )
 
 
-module.exports.addUser = function(newUser, callback){
-		User.create(newUser)
-};
 
-module.exports.findUserByEmail = function(sessUser, callback){
-	console.log(sessUser);
-	User.findOne( {
-		where: {
-			email: sessUser.email
-		}
-	}).then( user => {
+dbseq.sync({force: true}).then(f => { console.log( 'db synced' ) })
 
-		// dont save password plain text password. hash your goods
-		console.log('yay')
-	})
-}
-
-module.exports.addPost = function(newPost, callback){
-	Post.create(newPost)
-}
-
-
-module.exports.findPostsByOwner = function(sessUser, callback){
-	User.findOne( {
-		where: {
-			email: sessUser.email
-		}
-	}).then( user => {
-
-		// dont save password plain text password. hash your goods
-		console.log('yay')
-	})
-}
+module.exports = db;
